@@ -22,6 +22,10 @@ db.run(`
 
         const texto = req.body.texto;
 
+        if(!texto || texto.trim() === "") {
+            return res.status(400).send("Texto invalido");
+        }
+
         db.run(
             "INSERT INTO tarefas (texto) VALUES(?)",
             [texto],
@@ -51,21 +55,21 @@ db.run(`
     app.put("/tarefas/:id", (req, res) => {
 
         const id = req.params.id;
-        const concluida = req.body.concluida ? 1 : 0;
-
-        console.log("BODY:", req.body);
-        console.log("ID:", id);
-        console.log("STATUS:", concluida);
+        const texto = req.body.texto || null;
+        const concluida = req.body.concluida !== undefined ? (req.body.concluida ? 1 : 0) : null;
 
         db.run(
-            "UPDATE tarefas SET concluida = ? WHERE id = ?",
-            [concluida,id],
+            `UPDATE tarefas
+             SET texto = COALESCE(?, texto),
+                 concluida = COALESCE(?, concluida)
+             WHERE id = ?`,
+            [texto, concluida,id],
             function(err) {
                 if (err) {
                     console.error("ERRO SQL:", err);
                     res.status(500).send(err);
                 } else {
-                    res.send("Atualizado");
+                    res.json({ mensagem: "Atualizado com sucesso"});
                 }
             }
         );
@@ -82,7 +86,7 @@ db.run(`
                 if (err){
                     res.status(500).send(err);
                 } else {
-                    res.send("Deletado");
+                    res.json({ mensagem: "Deletado com sucesso"})
                 }
             }
         );
